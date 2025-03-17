@@ -5,6 +5,7 @@ from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 from urandom import choice
 from constants import SPEED
+from sokoban import play
 
 hub = PrimeHub()
 
@@ -13,8 +14,6 @@ right = Motor(Port.F)
 left = Motor(Port.E, positive_direction=Direction.COUNTERCLOCKWISE)
 s_dr = ColorSensor(Port.B)
 s_dl = ColorSensor(Port.A)
-# s_f = ColorSensor(Port.C)
-
 
 axle_track = 132.89
 
