@@ -1,6 +1,6 @@
 """
 A Sokoban algorithm solver. 
-Reads a textual map and outputs a list of coordinates and move types the actor should perform.
+Reads a textual map and outputs a list of directions and move types the actor should perform.
 Origon (0,0) will always be at the top left, probably inside a wall.
 This algorithm is extremely naive 
 
@@ -12,16 +12,17 @@ This algorithm is extremely naive
 
 >>> Output
 [
-((0,0), walk)
-((1,0), push)
-((2,0), push)
+("D", walk)
+("R", push)
+("R", push)
 ]
 ===
 """
+from constants import TILES, L, R, F, B
 
 
 type pos = tuple[int, int]
-type move = tuple[pos, str] # walk | push
+type move = tuple[int, str] # L | R | F | B, walk | push
 type moves = list[move]
 
 type walls = set[pos]
@@ -33,7 +34,6 @@ type boxes = set[pos]
 # (actor, boxes, moves) -> state
 type State = dict[str, pos|boxes|moves]
 state = lambda a, b, m: dict(actor=a, boxes=b, moves=m)
-TILES = { "#": "wall", "@": "actor", "$": "box", ".": "goal", "*": "box on goal", " ": "floor" }
 
 
 def play(s: State, ws: walls, gs: goals) -> moves:
@@ -43,9 +43,8 @@ def play(s: State, ws: walls, gs: goals) -> moves:
 
 
     return [
-        ((1,1), "walk"),
-        ((2,1), "push"),
-        ((3,1), "push"),
+        (F, "push"),
+        (L, "walk")
     ]
 
 
