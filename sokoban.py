@@ -1,7 +1,7 @@
 """
 A Sokoban algorithm solver. 
 Reads a textual map and outputs a list of coordinates and move types the actor should perform.
-Origon (0,0) will always be at the bottom left.
+Origon (0,0) will always be at the top left, probably inside a wall.
 This algorithm is extremely naive 
 
 <<< Input
@@ -15,12 +15,6 @@ This algorithm is extremely naive
 ((0,0), walk)
 ((1,0), push)
 ((2,0), push)
-
-l
-d
-r
-u
-
 ]
 ===
 """
@@ -39,7 +33,62 @@ type boxes = set[pos]
 # (actor, boxes, moves) -> state
 type State = dict[str, pos|boxes|moves]
 state = lambda a, b, m: dict(actor=a, boxes=b, moves=m)
+TILES = { "#": "wall", "@": "actor", "$": "box", ".": "goal", "*": "box on goal", " ": "floor" }
 
 
-def reader(str, mapping=TILES) -> tuple[State, walls, goals]:
-    
+def play(s: State, ws: walls, gs: goals) -> moves:
+
+    if s["boxes"] == gs: # All boxes are on goals
+        return s["moves"]
+
+
+    return [
+        ((1,1), "walk"),
+        ((2,1), "push"),
+        ((3,1), "push"),
+    ]
+
+
+def reader(map: list[str], *, mapping: dict[str, str] = TILES) -> tuple[State, walls, goals]:
+
+    ws: walls = set()
+    bs: boxes = set()
+    gs: goals = set()
+    actor: None|pos = None
+
+    for rowidx, row in enumerate(map):
+        for colidx, tile in enumerate(row):
+            curr = (rowidx, colidx)
+            t = mapping.get(tile, "")
+
+            if t == "wall": 
+                ws.add(curr)
+            elif t == "floor": 
+                pass
+            elif t == "box": 
+                bs.add(curr)
+            elif t == "goal": 
+                gs.add(curr)
+            elif t == "actor": 
+                actor = curr
+            elif t == "box on goal": 
+                gs.add(curr)
+                bs.add(curr)
+            else: 
+                print(f"Unknown {tile = }")
+
+
+    print(actor)
+    return state(actor, bs, []), ws, gs
+
+
+if __name__ == "__main__":
+    n = int(input())
+    m= []
+    for _ in range(n):
+        m.append(input())
+
+    print(reader(m))
+    play(*reader(m))
+
+
