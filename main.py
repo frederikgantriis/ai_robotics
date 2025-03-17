@@ -22,31 +22,32 @@ s_dl = ColorSensor(Port.A)
 axle_track = 132.89
 
 # Initialize Drivetrain with left, right, wheel diameter and distance between wheels
-base = DriveBase(left_motor=left, right_motor=right, wheel_diameter=56.5, axle_track=132.89)
+base = DriveBase(left_motor=left, right_motor=right,
+                 wheel_diameter=56.5, axle_track=132.89)
 
 # Quick PID Controller
 base.use_gyro(True)
 
-#TODO: Play music async
+# TODO: Play music async
 hub.speaker.volume(20)
-#hub.speaker.play_notes(imperial_march)
+# hub.speaker.play_notes(imperial_march)
 
-#TODO: Use IMU to check if the robot is stopping
+# TODO: Use IMU to check if the robot is stopping
 
-TAPE = lambda x: x.reflection() < 15
-GROUND = lambda x: 35 < x.reflection()
+
+def TAPE(x): return x.reflection() < 15
+def GROUND(x): return 35 < x.reflection()
 
 
 def navigate_sokoban():
     # Left sensor detects table as ~50, right detects it as ~60
     # Both sensor detects tape as ~10
     print("STARTING")
-    
+
     while True:
-        base.drive(SPEED,0)
+        base.drive(SPEED, 0)
         print(f"left-sensor: {s_dl.reflection()}")
         print(f"right-sensor: {s_dr.reflection()} \n")
-
 
         ###
         # Finding a piece of tape makes sensor go below 15, initiate a turn
@@ -57,7 +58,7 @@ def navigate_sokoban():
             direction = choice([1, -1])
             while (TAPE(s_dr) or TAPE(s_dl)):
                 base.drive(SPEED, 90*direction)
-        
+
         # Right Turn found (╔, ╝, ╠)
         elif TAPE(s_dr):
             print("Right turn found")
@@ -69,7 +70,6 @@ def navigate_sokoban():
             print("Left turn found")
             while TAPE(s_dl):
                 base.drive(SPEED, -90)
-        
 
         ###
         # Reflection starts falling below 50 means we're off-course
@@ -81,7 +81,6 @@ def navigate_sokoban():
             hub.speaker.beep(duration=50)
             base.drive(SPEED, -20)
             wait(200)
-
 
         # We're drifting port (towards the left)
         elif not (TAPE(s_dr) or GROUND(s_dr)):
