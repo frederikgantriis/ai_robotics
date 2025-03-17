@@ -12,82 +12,119 @@ This algorithm is extremely naive
 
 >>> Output
 [
-("D", walk)
-("R", push)
-("R", push)
+("D", "walk")
+("R", "push")
+("R", "push")
 ]
 ===
 """
-from constants import TILES, L, R, F, B
+from constants import TILES, L, R, U, D, DIR
+from kueue import Queue
 
+#TILES = {"#": "wall", "@": "actor", "$": "box", ".": "goal", "*": "box on goal", " ": "floor"}
 
-type pos = tuple[int, int]
-type move = tuple[int, str] # L | R | F | B, walk | push
-type moves = list[move]
+def parse_map(sokoban_map):
+    return [list(row) for row in sokoban_map.strip().split("\n")]
 
-type walls = set[pos]
-type goals = set[pos]
-type boxes = set[pos]
+def find_actor(state):
+    for y, row in enumerate(state):
+        for x, cell in enumerate(row):
+            if cell == "@" or cell == "+":
+                return (x, y)
 
-# Example state: { actor = (1,0), boxes = {(2,0)}, moves = [((0,0), walk), ((1,0), push)] }
-# Callable[[pos, list[pos], list[tuple[pos, move]]], dict]
-# (actor, boxes, moves) -> state
-type State = dict[str, pos|boxes|moves]
-state = lambda a, b, m: dict(actor=a, boxes=b, moves=m)
+def find_boxes(state):
+    return {(x, y) for y, row in enumerate(state) for x, cell in enumerate(row) if cell in {"$", "*"}}
 
+def find_goals(state):
+    return {(x, y) for y, row in enumerate(state) for x, cell in enumerate(row) if cell in {".", "*"}}
 
-def play(s: State, ws: walls, gs: goals) -> moves:
+def is_valid(state, x, y):
+    return 0 <= y < len(state) and 0 <= x < len(state[0]) and state[y][x] != "#"
 
-    if s["boxes"] == gs: # All boxes are on goals
-        return s["moves"]
+def move(state, x, y, dx, dy):
+    new_x, new_y = x + dx, y + dy
+    if not is_valid(state, new_x, new_y):
+        return None  # Can't move into walls
+    
+    new_state = [row[:] for row in state]
+    goals = find_goals(state)  # Track goal positions
+    
+    cell = state[new_y][new_x]
+    if cell in {"$", "*"}:  # Box present
+        box_new_x, box_new_y = new_x + dx, new_y + dy
+        if not is_valid(state, box_new_x, box_new_y) or state[box_new_y][box_new_x] in {"$", "*"}:
+            return None  # Box is blocked
+        
+        # Move box to new position
+        new_state[box_new_y][box_new_x] = "$" if (box_new_x, box_new_y) not in goals else "*"
+        new_state[new_y][new_x] = "@" if (new_x, new_y) not in goals else "+"  # Move actor
+        
+        # Restore previous position, ensuring goals are maintained
+        new_state[y][x] = "." if (x, y) in goals else " "
+        if state[new_y][new_x] == "*":  # If the box was on a goal
+            new_state[new_y][new_x] = "."  # Restore the goal
+    else:
+        new_state[new_y][new_x] = "@" if (new_x, new_y) not in goals else "+"  # Move actor
+        
+        # Restore previous position
+        new_state[y][x] = "." if (x, y) in goals else " "
+    
+    return new_state, ("push" if cell in {"$", "*"} else "walk"), (x + dx, y + dy)
 
+def is_solved(state):
+    goals = find_goals(state)
+    boxes = find_boxes(state)
+    return boxes == goals  # Ensure every goal has a box
 
-    return [
-        (F, "push"),
-        (L, "walk")
-    ]
+def bfs_solve(initial_state):
+    moves = [(0, -1, "up"), (0, 1, "down"), (-1, 0, "left"), (1, 0, "right")]
+    queue = Queue()
+    queue.enqueue((initial_state, find_actor(initial_state), []))
+    print(queue)
+    visited = set()
+    
+    while not queue.is_empty():
+        state, (x, y), path = queue.dequeue()
+        state_tuple = tuple(map(tuple, state))
+        if state_tuple in visited:
+            continue
+        visited.add(state_tuple)
+        
+        if is_solved(state):
+            return path
+        
+        for dx, dy, direction in moves:
+            result = move(state, x, y, dx, dy)
+            print(result)
+            if result:
+                new_state, action, new_pos = result
+                queue.enqueue((new_state, new_pos, path + [(direction, action)]))
+    
+    return None  # No solution
 
-
-def reader(map: list[str], *, mapping: dict[str, str] = TILES) -> tuple[State, walls, goals]:
-
-    ws: walls = set()
-    bs: boxes = set()
-    gs: goals = set()
-    actor: None|pos = None
-
-    for rowidx, row in enumerate(map):
-        for colidx, tile in enumerate(row):
-            curr = (rowidx, colidx)
-            t = mapping.get(tile, "")
-
-            if t == "wall": 
-                ws.add(curr)
-            elif t == "floor": 
-                pass
-            elif t == "box": 
-                bs.add(curr)
-            elif t == "goal": 
-                gs.add(curr)
-            elif t == "actor": 
-                actor = curr
-            elif t == "box on goal": 
-                gs.add(curr)
-                bs.add(curr)
-            else: 
-                print(f"Unknown {tile = }")
-
-
-    print(actor)
-    return state(actor, bs, []), ws, gs
-
-
-if __name__ == "__main__":
-    n = int(input())
-    m= []
-    for _ in range(n):
-        m.append(input())
-
-    print(reader(m))
-    play(*reader(m))
-
+# Example usage
+breaks = """
+#####
+#   #
+# $ #
+# *+#
+#####
+"""
+also_breaks = """
+#####
+#.  #
+# $ #
+# *@#
+#####
+"""
+sokoban_map = """
+#####
+#@  #
+# $ #
+# *.#
+#####
+"""
+state = parse_map(sokoban_map)
+solution = bfs_solve(state)
+print(solution)
 

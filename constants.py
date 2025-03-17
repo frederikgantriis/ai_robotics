@@ -1,8 +1,8 @@
 R = 0
 L = 1
-F = 2
-B = 3
+U = 2
+D = 3
 SPEED = 100
-TILES = {"#": "wall", "@": "actor", "$": "box",
+TILES = {"#": "wall", "@": "actor", "$": "box", "+": "player on goal",
          ".": "goal", "*": "box on goal", " ": "floor"}
-
+DIR = {"r": (0,1), "l": (0, -1), "u": (-1, 0), "d": (1, 0)}

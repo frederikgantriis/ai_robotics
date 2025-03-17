@@ -1,22 +1,25 @@
-class Queue:
+class Queue[T]:
     def __init__(self):
         self.queue = []
 
-    def enqueue(self, item):
+    def enqueue(self, item: T):
         self.queue.append(item)
 
-    def dequeue(self):
+    def dequeue(self) -> T:
         if not self.is_empty():
             return self.queue.pop(0)
-        return None
+        raise IndexError()
 
-    def peek(self):
+    def peek(self) -> T:
         if not self.is_empty():
             return self.queue[0]
-        return None
+        raise IndexError()
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return len(self.queue) == 0
 
-    def size(self):
+    def size(self) -> int:
         return len(self.queue)
+
+    def __repr__(self) -> str:
+        return str(self.queue)
