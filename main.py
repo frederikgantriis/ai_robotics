@@ -1,13 +1,10 @@
 from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor
-from pybricks.parameters import Button, Color, Direction, Port, Side, Stop, Axis
+from pybricks.pupdevices import Motor, ColorSensor
+from pybricks.parameters import Direction, Port
 from pybricks.robotics import DriveBase
-from pybricks.tools import wait, StopWatch, multitask, vector, run_task
+from pybricks.tools import wait
 from urandom import choice
-from umath import pi, radians
-from music import mii_music, imperial_march
-from constants import CENTER, RIGHT, LEFT, SPEED
-from queue import Queue
+from constants import SPEED
 
 hub = PrimeHub()
 
@@ -21,16 +18,13 @@ s_dl = ColorSensor(Port.A)
 
 axle_track = 132.89
 
-# Initialize Drivetrain with left, right, wheel diameter and distance between wheels
+# Initialize Drivetrain with left, right, wheel diameter
+# and distance between wheels
 base = DriveBase(left_motor=left, right_motor=right,
                  wheel_diameter=56.5, axle_track=132.89)
 
 # Quick PID Controller
 base.use_gyro(True)
-
-# TODO: Play music async
-hub.speaker.volume(20)
-# hub.speaker.play_notes(imperial_march)
 
 # TODO: Use IMU to check if the robot is stopping
 
