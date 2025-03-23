@@ -54,7 +54,7 @@ def replay(
         state: dict,
         goals: set[tuple[int, int]],
         walls: set[tuple[int, int]],
-        moves: list[tuple[str, str]]
+        moves: list[tuple[str, str]],
     ):
     """
     Arguments:
@@ -72,8 +72,7 @@ def replay(
     'action' is a string of (walk, push)
 
     Example:
-        >>>> state = { actor: (1,1), boxes = {(2,1), (3,1)} }
-        >>>
+        >>>> state = { actor: (1,1), boxes = {(2,1), (3,1), moves: []} }
     """
     def delay():
         _ = 1

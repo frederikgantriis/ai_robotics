@@ -71,9 +71,10 @@ def reader(lines: list[str], *, mapping: dict[str, str] = TILES) -> tuple[dict, 
     return State(actor, boxes, []), goals, walls
 
 
-def main(init: dict,
-         goals: set[tuple[int, int]],
-         walls: set[tuple[int, int]],
+def main(
+        init: dict,
+        goals: set[tuple[int, int]],
+        walls: set[tuple[int, int]],
     ) -> list[tuple[str, str]]:
     """
     Main function for sokoban algorithm, calculates a solution for a sokoban game
@@ -100,9 +101,9 @@ def main(init: dict,
         for direction in ["left", "right", "up", "down"]:
             walk, push = valid(state, direction, walls)
             action = "push" if push else "walk" if walk else "invalid"
-            if (state["actor"], tuple(state["boxes"]), dir) in priors or action == "invalid":
+            if (state["actor"], tuple(state["boxes"]), direction) in priors or action == "invalid":
                 continue
-            new_prior = (state["actor"], tuple(state["boxes"]), dir)
+            new_prior = (state["actor"], tuple(state["boxes"]), direction)
             priors.add(new_prior)
 
             new_actor = pos_add(state["actor"], direction)
