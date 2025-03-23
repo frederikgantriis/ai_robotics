@@ -1,8 +1,8 @@
 """
-A Sokoban algorithm solver. 
+A Sokoban algorithm solver.
 Reads a textual level and outputs a list of directions and move types the actor should perform.
 Origon (0,0) will always be at the top left, probably inside a wall.
-This algorithm is extremely naive 
+This algorithm is extremely naive
 
 <<< Input
 ######
@@ -26,7 +26,21 @@ from prettyprint import replay
 
 
 
-def reader(lines: list[str], mapping: dict[str, str] = TILES) -> tuple[dict, set, set]:
+def reader(lines: list[str], *, mapping: dict[str, str] = TILES) -> tuple[dict, set, set]:
+    """
+    Helper function translating a list of strings into a sokoban map
+
+    Arguments:
+        lines: list of strings to map
+        *:
+        mapping: dictionary mapping characters such as '#' to their meaning e.g. 'wall'
+
+    Returns:
+        tuple[dict,set,set]:
+        Initial state of the game <br>
+        Set of coordinates for all goals on the map <br>
+        Set of coordinates for all walls on the map
+    """
     actor = (-1, -1)
     boxes = set()
     goals = set()
@@ -57,7 +71,23 @@ def reader(lines: list[str], mapping: dict[str, str] = TILES) -> tuple[dict, set
     return State(actor, boxes, []), goals, walls
 
 
-def main(init: dict, goals: set, walls: set) -> list[tuple[str, str]]:
+def main(init: dict,
+         goals: set[tuple[int, int]],
+         walls: set[tuple[int, int]],
+    ) -> list[tuple[str, str]]:
+    """
+    Main function for sokoban algorithm, calculates a solution for a sokoban game
+
+    Arguments:
+        init: Initial state of the sokoban game
+        goals: Set of coordinates for all goals
+        walls: Set of coordinates for all walls
+
+    Returns:
+        list[tuple[direction,action]]:
+        List of moves to perform in order to solve the level, \
+            empty if level is unsolvable or solved by default
+    """
     if init["boxes"] == goals:
         return init["moves"]
 
@@ -67,18 +97,18 @@ def main(init: dict, goals: set, walls: set) -> list[tuple[str, str]]:
     while not q.is_empty():
         state = q.dequeue()
 
-        for dir in ["left", "right", "up", "down"]:
-            walk, push = valid(state, dir, walls)
+        for direction in ["left", "right", "up", "down"]:
+            walk, push = valid(state, direction, walls)
             action = "push" if push else "walk" if walk else "invalid"
             if (state["actor"], tuple(state["boxes"]), dir) in priors or action == "invalid":
                 continue
             new_prior = (state["actor"], tuple(state["boxes"]), dir)
             priors.add(new_prior)
 
-            new_actor = pos_add(state["actor"], dir)
-            new_boxes = {pos_add(box, dir) if new_actor == box else box 
+            new_actor = pos_add(state["actor"], direction)
+            new_boxes = {pos_add(box, direction) if new_actor == box else box
                             for box in state["boxes"]} if push else state["boxes"]
-            new_moves = state["moves"] + [(dir, action)]
+            new_moves = state["moves"] + [(direction, action)]
             new_state = State(new_actor, new_boxes, new_moves)
 
             if new_state["boxes"] == goals:
@@ -89,8 +119,7 @@ def main(init: dict, goals: set, walls: set) -> list[tuple[str, str]]:
     return []
 
 if __name__ == '__main__':
-    from time import sleep
-    claire = """
+    CLAIRE = """
     #######
     #.@ # #
     #$* $ #
@@ -99,7 +128,7 @@ if __name__ == '__main__':
     #  *  #
     #######
     """
-    alice = """
+    ALICE = """
     #######
     #.    #
     #$* # #
@@ -108,7 +137,7 @@ if __name__ == '__main__':
     #@ *  #
     #######
     """
-    sophia = """
+    SOPHIA = """
     #######
     #     #
     #@$.# #
@@ -118,12 +147,13 @@ if __name__ == '__main__':
     #######
     """
 
-
     split = lambda s: [line.strip() for line in s.split('\n') if line.strip()]
-    level = split(sophia)
-    state, goals, walls = reader(level)
+    level = split(SOPHIA)
+    init_state, init_goals, init_walls = reader(level)
+
     print("Starting search...")
-    solution = main(state, goals, walls)
+    solution = main(init_state, init_goals, init_walls)
+
     print("Found solution!")
-    replay(state, goals, walls, solution)
+    replay(init_state, init_goals, init_walls, solution)
     print(solution)
