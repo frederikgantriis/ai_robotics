@@ -1,6 +1,6 @@
 """
 A Sokoban algorithm solver. 
-Reads a textual map and outputs a list of directions and move types the actor should perform.
+Reads a textual level and outputs a list of directions and move types the actor should perform.
 Origon (0,0) will always be at the top left, probably inside a wall.
 This algorithm is extremely naive 
 
@@ -18,113 +18,112 @@ This algorithm is extremely naive
 ]
 ===
 """
-from constants import TILES, L, R, U, D, DIR
+
+from constants import TILES
 from kueue import Queue
+from utils import pos_add, valid, State
+from prettyprint import replay
 
-#TILES = {"#": "wall", "@": "actor", "$": "box", ".": "goal", "*": "box on goal", " ": "floor"}
 
-def parse_map(sokoban_map):
-    return [list(row) for row in sokoban_map.strip().split("\n")]
 
-def find_actor(state):
-    for y, row in enumerate(state):
-        for x, cell in enumerate(row):
-            if cell == "@" or cell == "+":
-                return (x, y)
+def reader(lines: list[str], mapping: dict[str, str] = TILES) -> tuple[dict, set, set]:
+    actor = (-1, -1)
+    boxes = set()
+    goals = set()
+    walls = set()
 
-def find_boxes(state):
-    return {(x, y) for y, row in enumerate(state) for x, cell in enumerate(row) if cell in {"$", "*"}}
+    for rowidx, line in enumerate(lines):
+        for colidx, cell in enumerate(line):
+            pos = (rowidx, colidx)
+            val = mapping[cell]
+            if val == "wall":
+                walls.add(pos)
+            elif val == "floor":
+                pass
+            elif val == "goal":
+                goals.add(pos)
+            elif val == "box":
+                boxes.add(pos)
+            elif val == "box on goal":
+                boxes.add(pos)
+                goals.add(pos)
+            elif val == "actor on goal":
+                actor = pos
+                goals.add(pos)
+            elif val == "actor":
+                actor = pos
 
-def find_goals(state):
-    return {(x, y) for y, row in enumerate(state) for x, cell in enumerate(row) if cell in {".", "*"}}
 
-def is_valid(state, x, y):
-    return 0 <= y < len(state) and 0 <= x < len(state[0]) and state[y][x] != "#"
+    return State(actor, boxes, []), goals, walls
 
-def move(state, x, y, dx, dy):
-    new_x, new_y = x + dx, y + dy
-    if not is_valid(state, new_x, new_y):
-        return None  # Can't move into walls
-    
-    new_state = [row[:] for row in state]
-    goals = find_goals(state)  # Track goal positions
-    
-    cell = state[new_y][new_x]
-    if cell in {"$", "*"}:  # Box present
-        box_new_x, box_new_y = new_x + dx, new_y + dy
-        if not is_valid(state, box_new_x, box_new_y) or state[box_new_y][box_new_x] in {"$", "*"}:
-            return None  # Box is blocked
-        
-        # Move box to new position
-        new_state[box_new_y][box_new_x] = "$" if (box_new_x, box_new_y) not in goals else "*"
-        new_state[new_y][new_x] = "@" if (new_x, new_y) not in goals else "+"  # Move actor
-        
-        # Restore previous position, ensuring goals are maintained
-        new_state[y][x] = "." if (x, y) in goals else " "
-        if state[new_y][new_x] == "*":  # If the box was on a goal
-            new_state[new_y][new_x] = "."  # Restore the goal
-    else:
-        new_state[new_y][new_x] = "@" if (new_x, new_y) not in goals else "+"  # Move actor
-        
-        # Restore previous position
-        new_state[y][x] = "." if (x, y) in goals else " "
-    
-    return new_state, ("push" if cell in {"$", "*"} else "walk"), (x + dx, y + dy)
 
-def is_solved(state):
-    goals = find_goals(state)
-    boxes = find_boxes(state)
-    return boxes == goals  # Ensure every goal has a box
+def main(init: dict, goals: set, walls: set) -> list[tuple[str, str]]:
+    if init["boxes"] == goals:
+        return init["moves"]
 
-def bfs_solve(initial_state):
-    moves = [(0, -1, "up"), (0, 1, "down"), (-1, 0, "left"), (1, 0, "right")]
-    queue = Queue()
-    queue.enqueue((initial_state, find_actor(initial_state), []))
-    print(queue)
-    visited = set()
-    
-    while not queue.is_empty():
-        state, (x, y), path = queue.dequeue()
-        state_tuple = tuple(map(tuple, state))
-        if state_tuple in visited:
-            continue
-        visited.add(state_tuple)
-        
-        if is_solved(state):
-            return path
-        
-        for dx, dy, direction in moves:
-            result = move(state, x, y, dx, dy)
-            print(result)
-            if result:
-                new_state, action, new_pos = result
-                queue.enqueue((new_state, new_pos, path + [(direction, action)]))
-    
-    return None  # No solution
+    priors = set()
+    q = Queue()
+    q.enqueue(init)
+    while not q.is_empty():
+        state = q.dequeue()
 
-# Example usage
-breaks = """
-#####
-#   #
-# $ #
-# *+#
-#####
-"""
-also_breaks = """
-#####
-#.  #
-# $ #
-# *@#
-#####
-"""
-sokoban_map = """
-#####
-#@  #
-# $ #
-# *.#
-#####
-"""
-state = parse_map(sokoban_map)
-solution = bfs_solve(state)
-print(solution)
+        for dir in ["left", "right", "up", "down"]:
+            walk, push = valid(state, dir, walls)
+            action = "push" if push else "walk" if walk else "invalid"
+            if (state["actor"], tuple(state["boxes"]), dir) in priors or action == "invalid":
+                continue
+            new_prior = (state["actor"], tuple(state["boxes"]), dir)
+            priors.add(new_prior)
 
+            new_actor = pos_add(state["actor"], dir)
+            new_boxes = {pos_add(box, dir) if new_actor == box else box 
+                            for box in state["boxes"]} if push else state["boxes"]
+            new_moves = state["moves"] + [(dir, action)]
+            new_state = State(new_actor, new_boxes, new_moves)
+
+            if new_state["boxes"] == goals:
+                return new_state["moves"]
+
+            q.enqueue(new_state)
+
+    return []
+
+if __name__ == '__main__':
+    from time import sleep
+    claire = """
+    #######
+    #.@ # #
+    #$* $ #
+    #   $ #
+    # ..  #
+    #  *  #
+    #######
+    """
+    alice = """
+    #######
+    #.    #
+    #$* # #
+    #.  $*#
+    # .$  #
+    #@ *  #
+    #######
+    """
+    sophia = """
+    #######
+    #     #
+    #@$.# #
+    #*$  .#
+    # $$  #
+    # . . #
+    #######
+    """
+
+
+    split = lambda s: [line.strip() for line in s.split('\n') if line.strip()]
+    level = split(sophia)
+    state, goals, walls = reader(level)
+    print("Starting search...")
+    solution = main(state, goals, walls)
+    print("Found solution!")
+    replay(state, goals, walls, solution)
+    print(solution)
