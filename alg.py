@@ -30,6 +30,12 @@ def pos_add(pos: tuple[int, int], dir: str) -> tuple[int, int]:
     VEC = {"left": (0, -1), "right": (0, 1), "up": (-1, 0), "down": (1, 0)}
     return tuple(sum(x) for x in zip(pos, VEC[dir])) # type: ignore
 
+def pretty_print(state: dict, _goals: set, _walls: set):
+    actor = state["actor"]
+    boxes = state["boxes"]
+    walls = sorted(_walls)
+    goals = sorted(_goals)
+
 
 
 def reader(lines: list[str], mapping: dict[str, str] = TILES) -> tuple[dict, set, set]:
@@ -50,8 +56,10 @@ def reader(lines: list[str], mapping: dict[str, str] = TILES) -> tuple[dict, set
                 goals.add(pos)
             elif val == "box":
                 boxes.add(pos)
-                walls.add(pos)
-            elif "actor on goal":
+            elif val == "box on goal":
+                boxes.add(pos)
+                goals.add(pos)
+            elif val == "actor on goal":
                 actor = pos
                 goals.add(pos)
             elif val == "actor":
@@ -65,11 +73,14 @@ def valid(state, dir, walls) -> tuple[bool, bool]:
     new_actor = pos_add(state["actor"], dir)
 
     if new_actor in walls:
+        #print("Actor hit a wall")
         return False, False
 
     elif new_actor in state["boxes"]:
+        #print(f"Hit a box at {new_actor} going {dir}")
         new_box = pos_add(new_actor, dir)
         if new_box not in walls:
+            #print("Pushing box")
             return True, True
         else:
             return False, False
@@ -79,33 +90,38 @@ def valid(state, dir, walls) -> tuple[bool, bool]:
 
 
 def main(init: dict, goals: set, walls: set) -> list[tuple[str, str]]:
-    q = Queue()
-    priors = set()
+    if init["boxes"] == goals:
+        return init["moves"]
 
+    priors = set()
+    q = Queue()
     q.enqueue(init)
     while not q.is_empty():
         state = q.dequeue()
-        if state["boxes"] == goals:
-            return state["moves"]
 
         for dir in ["left", "right", "up", "down"]:
             walk, push = valid(state, dir, walls)
             action = "push" if push else "walk" if walk else "invalid"
-            if (state["actor"], tuple(state["boxes"]), dir, action) in priors:
-                continue
-            new_prior = (state["actor"], tuple(state["boxes"]), dir, action)
-            priors.add(new_prior)
             if action == "invalid":
                 continue
+            if (state["actor"], tuple(state["boxes"]), dir) in priors:
+                continue
+            print((walk, push), state["actor"], dir, action)
+            print(state["moves"])
+            new_prior = (state["actor"], tuple(state["boxes"]), dir)
+            priors.add(new_prior)
 
             new_actor = pos_add(state["actor"], dir)
             new_boxes = {pos_add(box, dir) for box in state["boxes"] if new_actor == box} if push else state["boxes"]
-            new_moves = state["moves"] + [dir, action]
+            new_moves = state["moves"] + [(dir, action)]
             new_state = State(new_actor, new_boxes, new_moves)
-            q.enqueue(new_state)
-            print("\n".join(map(str, priors)))
-            print("="*10)
 
+            if new_state["boxes"] == goals:
+                return new_state["moves"]
+
+            q.enqueue(new_state)
+            #print("\n".join(map(str, sorted(priors, key= lambda x: x[0]))))
+            print("="*10)
 
     return []
 
@@ -116,13 +132,25 @@ if __name__ == '__main__':
     lines = [
         "####",
         "#@ #",
+        "#$ #",
         "#. #",
-        "#$ #"
+        "####",
     ]
-    state, goals, walls = reader(lines)
+    alice = """
+    #######
+    #.@ # #
+    #$* $ #
+    #   $ #
+    # ..  #
+    #  *  #
+    #######
+    """
+    alice = [line.strip() for line in alice.split('\n') if line.strip()]
+    print(alice)
+    state, goals, walls = reader(alice)
     print(f"{state = }")
-    print(f"{goals = }")
-    print(f"{walls = }")
+    print(f"{sorted(goals) = }")
+    print(f"{sorted(walls) = }")
     sleep(5)
     solution = main(state, goals, walls)
     print(solution)
