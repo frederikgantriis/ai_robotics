@@ -71,7 +71,7 @@ def reader(lines: list[str], *, mapping: dict[str, str] = TILES) -> tuple[dict, 
     return State(actor, boxes, []), goals, walls
 
 
-def main(
+def sokoban(
         init: dict,
         goals: set[tuple[int, int]],
         walls: set[tuple[int, int]],
@@ -147,13 +147,21 @@ if __name__ == '__main__':
     # . . #
     #######
     """
+    COMP = """
+    #######
+    #@   .#
+    # $   # 
+    #.$   #
+    # $  .#
+    #######
+    """
 
     split = lambda s: [line.strip() for line in s.split('\n') if line.strip()]
-    level = split(SOPHIA)
+    level = split(COMP)
     init_state, init_goals, init_walls = reader(level)
 
     print("Starting search...")
-    solution = main(init_state, init_goals, init_walls)
+    solution = sokoban(init_state, init_goals, init_walls)
 
     print("Found solution!")
     replay(init_state, init_goals, init_walls, solution)
