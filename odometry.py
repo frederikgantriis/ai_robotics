@@ -3,7 +3,7 @@ from pybricks.pupdevices import Motor, ColorSensor
 from pybricks.parameters import Direction, Port
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
-from umath import cos, sin, degrees
+from umath import cos, sin, degrees, radians
 
 hub = PrimeHub()
 
@@ -38,9 +38,8 @@ x, y, theta = 0.0, 0.0, 0.0
 
 def get_wheel_velocities(motor):
     """Get wheel angular velocities in radians per second."""
-    # use motor.speed() to return the current angular velocity
-    # of the motor in degrees per second
-    return motor.speed() / 2
+    # use motor.speed() to return the current angular velocity of the motor in degrees per second
+    return radians(motor.speed())
 
 
 def update_odometry():
@@ -50,11 +49,12 @@ def update_odometry():
     phi_r = get_wheel_velocities(right)
     phi_l = get_wheel_velocities(left)
 
-    _theta = R * phi_r / (2 * L) - R * phi_l / (2 * L)
+    _theta = R / (2*L) * (phi_r - phi_l)
 
-    x += R/2 * (phi_r + phi_l) * cos(_theta) * DT
-    y += R/2 * (phi_r + phi_l) * sin(_theta) * DT
-    theta += R/(2*L) * (phi_r + phi_l) * DT
+
+    x += R/2 * (phi_r + phi_l) * cos(theta) * DT
+    y += R/2 * (phi_r + phi_l) * sin(theta) * DT 
+    theta += _theta * DT
 
 
 def move_robot(left_speed, right_speed, duration):
