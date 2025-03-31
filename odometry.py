@@ -51,9 +51,8 @@ def update_odometry():
 
     _theta = R / (2*L) * (phi_r - phi_l)
 
-
     x += R/2 * (phi_r + phi_l) * cos(theta) * DT
-    y += R/2 * (phi_r + phi_l) * sin(theta) * DT 
+    y += R/2 * (phi_r + phi_l) * sin(theta) * DT
     theta += _theta * DT
 
 
@@ -77,8 +76,8 @@ def move_robot(left_speed, right_speed, duration):
 # move forward for n sec
 move_robot(100, 100, 2)
 # turn in place for m sec
-move_robot(80, 0, 3)
+move_robot(50, 0, 60)
 # move forward for k seconds
 move_robot(100, 100, 2)
 print("Final Position:", x, y, degrees(theta) % 360)
-print(f"heading: {hub.imu.heading()}")
+print(f"heading: {hub.imu.heading() % 360}")
