@@ -3,11 +3,7 @@ from pybricks.pupdevices import Motor, ColorSensor
 from pybricks.parameters import Direction, Port
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
-from pybricks.geometry import Matrix, 
-from urandom import choice
-from constants import SPEED
-from sokoban import sokoban, reader
-from umath import cos, sin
+from umath import cos, sin, degrees
 
 hub = PrimeHub()
 
@@ -28,22 +24,24 @@ base = DriveBase(left_motor=left, right_motor=right,
 base.use_gyro(True)
 
 
-
 # Constants: Robot physical parameters (fixed)
 DT = 0.1  # Time step for odometry updates (seconds)
-D = 5.25 # Wheel diameter
-R = D/2 # Wheel radius
-L = 132.89 / 10 / 2 # Length from robot origin to wheels (mm -> cm)
+D = 5.25  # Wheel diameter
+R = D/2  # Wheel radius
+L = 132.89 / 10 / 2  # Length from robot origin to wheels (mm -> cm)
 
 
 # dynamic variables
-x, y, theta = 0.0, 0.0, 0.0  # Position (in meters) and orientation (in radians)
+# Position (in meters) and orientation (in radians)
+x, y, theta = 0.0, 0.0, 0.0
 
 
 def get_wheel_velocities(motor):
     """Get wheel angular velocities in radians per second."""
-    # use motor.speed() to return the current angular velocity of the motor in degrees per second
+    # use motor.speed() to return the current angular velocity
+    # of the motor in degrees per second
     return motor.speed() / 2
+
 
 def update_odometry():
     """Update the robot's position using kinematic equations."""
@@ -54,15 +52,14 @@ def update_odometry():
 
     _theta = R * phi_r / (2 * L) - R * phi_l / (2 * L)
 
-
     x += R/2 * (phi_r + phi_l) * cos(_theta) * DT
-    y += R/2 * (phi_r + phi_l) * sin(_theta) * DT 
+    y += R/2 * (phi_r + phi_l) * sin(_theta) * DT
     theta += R/(2*L) * (phi_r + phi_l) * DT
 
 
-
 def move_robot(left_speed, right_speed, duration):
-    """Move the robot with given wheel speeds for a given duration and do odometry."""
+    """Move the robot with given wheel speeds
+    for a given duration and do odometry."""
     left.run(left_speed)
     right.run(right_speed)
 
@@ -78,9 +75,10 @@ def move_robot(left_speed, right_speed, duration):
 
 # Example movement sequence:
 # move forward for n sec
-move_robot(...)
+move_robot(100, 100, 2)
 # turn in place for m sec
-move_robot(...)
+move_robot(80, 0, 3)
 # move forward for k seconds
-move_robot(...)
-print("Final Position:", x, y, degrees(theta))
+move_robot(100, 100, 2)
+print("Final Position:", x, y, degrees(theta) % 360)
+print(f"heading: {hub.imu.heading()}")
